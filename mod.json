@@ -5,6 +5,11 @@
     "name": "Simple Patch Loader",
     "developer": "ConfiG",
     "description": "meow :3",
+    "repository": "https://github.com/cgytrus/SimplePatchLoader",
+    "issues": {
+        "info": "meow :3",
+        "url": "https://github.com/cgytrus/SimplePatchLoader/issues"
+    },
     "early-load": true,
     "resources": {
         "files": [
