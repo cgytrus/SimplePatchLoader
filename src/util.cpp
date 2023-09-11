@@ -16,7 +16,7 @@ uintptr_t util::getBaseFromName(const std::string& name) {
 #elif defined(GEODE_IS_ANDROID)
     return reinterpret_cast<uintptr_t>(dlopen(name.c_str(), RTLD_LAZY));
 #else
-    return nullptr;
+    return 0;
 #endif
 }
 
