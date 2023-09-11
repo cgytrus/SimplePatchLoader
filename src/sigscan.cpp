@@ -6,8 +6,6 @@
 
 #include "sigscan.hpp"
 
-#include <malloc.h>
-
 // http://www.unknowncheats.me/forum/c-and-c/77419-findpattern.html#post650040
 // Original code by learn_more
 // Fix based on suggestion from stevemk14ebr : http://www.unknowncheats.me/forum/1056782-post13.html
@@ -23,10 +21,8 @@ namespace {
 
 ptrdiff_t sigscan::findPattern(uintptr_t addr, size_t len, std::string_view& pattern) {
     size_t l = pattern.size();
-    auto* patBase = static_cast<uint8_t*>(_malloca(l >> 1));
-    auto* mskBase = static_cast<char*>(_malloca(l >> 1));
-    if (!patBase || !mskBase)
-        return 0;
+    auto* patBase = new uint8_t[l >> 1];
+    auto* mskBase = new char[l >> 1];
     auto* pat = patBase;
     auto* msk = mskBase;
     l = 0;
@@ -55,5 +51,7 @@ ptrdiff_t sigscan::findPattern(uintptr_t addr, size_t len, std::string_view& pat
     for (size_t n = 0; n < (len - l); ++n)
         if (isMatch(addr + n, patBase, mskBase))
             return static_cast<ptrdiff_t>(n);
+    delete[] patBase;
+    delete[] mskBase;
     return 0;
 }
