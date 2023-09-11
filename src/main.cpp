@@ -561,6 +561,7 @@ $execute {
             if (ImGui::Button("Reload Patches"))
                 loadAll();
 
+#if defined(GEODE_IS_WINDOWS)
             bool mhv5DownloadDisabled = false;
             for (float d : mhv5Download) {
                 if (d >= 0.f) {
@@ -583,7 +584,6 @@ $execute {
             ImGui::Separator();
 
             // TODO: mac users dont have pp rn
-#if defined(GEODE_IS_WINDOWS)
             ImGui::LabelText("", "Blur");
             if (ImGui::CoolCheckbox("Fast", &pp::blurFast))
                 Mod::get()->setSettingValue<bool>("blur-fast", pp::blurFast);
