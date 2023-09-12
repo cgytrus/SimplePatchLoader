@@ -17,11 +17,11 @@ struct Shader {
     ) {
         auto vertexSource = file::readString(vertexPath);
         if (!vertexSource)
-            return Err(vertexSource.unwrapErr());
+            return Err("failed to read vertex shader at path {}: {}", vertexPath.string(), vertexSource.unwrapErr());
 
         auto fragmentSource = file::readString(fragmentPath);
         if (!fragmentSource)
-            return Err(fragmentSource.unwrapErr());
+            return Err("failed to read fragment shader at path {}: {}", fragmentPath.string(), fragmentSource.unwrapErr());
 
         auto getShaderLog = [](GLuint id) -> std::string {
             GLint length, written;
@@ -194,7 +194,7 @@ void setupPostProcess() {
 
     auto res = ppShader.setup(vertexPath, fragmentPath);
     if (!res) {
-        log::error("{}", res.unwrapErr());
+        log::error("Failed to set up shader: {}", res.unwrapErr());
         return;
     }
     log::info("{}", res.unwrap());
