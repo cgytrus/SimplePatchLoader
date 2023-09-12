@@ -1,9 +1,7 @@
 #version 120
-#extension GL_ARB_explicit_attrib_location : require
-#extension GL_ARB_separate_shader_objects : require
 
-attribute layout(location = 0) vec2 aPosition;
-attribute layout(location = 1) vec2 aTexCoords;
+attribute vec2 aPosition;
+attribute vec2 aTexCoords;
 
 varying vec2 TexCoords;
 
