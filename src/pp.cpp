@@ -198,8 +198,9 @@ void setupPostProcess() {
         return;
     }
     log::info("{}", res.unwrap());
-    glProgramUniform1i(ppShader.program, glGetUniformLocation(ppShader.program, "screen"), 0);
-    glProgramUniform2f(ppShader.program, glGetUniformLocation(ppShader.program, "screenSize"), size.width, size.height);
+    ccGLUseProgram(ppShader.program);
+    glUniform1i(glGetUniformLocation(ppShader.program, "screen"), 0);
+    glUniform2f(glGetUniformLocation(ppShader.program, "screenSize"), size.width, size.height);
     ppShaderFast = glGetUniformLocation(ppShader.program, "fast");
     ppShaderFirst = glGetUniformLocation(ppShader.program, "first");
     ppShaderRadius = glGetUniformLocation(ppShader.program, "radius");
@@ -254,13 +255,7 @@ class $modify(CCNode) {
         CCNode::visit();
 
         glBindVertexArray(ppVao);
-#if defined(GEODE_IS_WINDOWS)
         ccGLUseProgram(ppShader.program);
-#else
-        GLint prevProgram;
-        glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
-        glUseProgram(ppShader.program);
-#endif
         glUniform1i(ppShaderFast, pp::blurFast);
         glUniform1f(ppShaderRadius, blur);
 
@@ -282,10 +277,6 @@ class $modify(CCNode) {
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glBindVertexArray(0);
-
-#if !defined(GEODE_IS_WINDOWS)
-        glUseProgram(prevProgram);
-#endif
     }
 };
 
