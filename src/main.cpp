@@ -580,10 +580,10 @@ $execute {
                 if (d >= 0.f)
                     ImGui::ProgressBar(mhv5Download[0], ImVec2(-1.f, 2.f));
             ImGui::EndDisabled();
+#endif
 
             ImGui::Separator();
 
-            // TODO: mac users dont have pp rn
             ImGui::LabelText("", "Blur");
             if (ImGui::CoolCheckbox("Fast", &pp::blurFast))
                 Mod::get()->setSettingValue<bool>("blur-fast", pp::blurFast);
@@ -591,7 +591,6 @@ $execute {
                 Mod::get()->setSettingValue<double>("blur-amount", pp::blurAmount);
             if (ImGui::SliderFloat("Time", &pp::blurTime, 0.f, 5.f))
                 Mod::get()->setSettingValue<double>("blur-time", pp::blurTime);
-#endif
 
             windowPreEnd();
             ImGui::End();

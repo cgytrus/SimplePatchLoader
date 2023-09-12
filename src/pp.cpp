@@ -5,6 +5,102 @@ using namespace geode::prelude;
 
 #include "pp.hpp"
 
+// do u guys like hardcore opengl? well i have good news for u !!!!!! :3
+
+// cuz mac also ccglprogram is annoying anyway fuck ccglprogram all my homies do shaders manually
+struct Shader {
+    GLuint program = 0;
+
+    Result<std::string> setup(
+        const ghc::filesystem::path& vertexPath,
+        const ghc::filesystem::path& fragmentPath
+    ) {
+        auto vertexSource = file::readString(vertexPath);
+        if (!vertexSource)
+            return Err(vertexSource.unwrapErr());
+
+        auto fragmentSource = file::readString(fragmentPath);
+        if (!fragmentSource)
+            return Err(fragmentSource.unwrapErr());
+
+        auto getShaderLog = [](GLuint id) -> std::string {
+            GLint length, written;
+            glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
+            if (length <= 0)
+                return "";
+            auto stuff = new char[length + 1];
+            glGetShaderInfoLog(id, length, &written, stuff);
+            std::string result(stuff);
+            delete[] stuff;
+            return result;
+        };
+        auto getProgramLog = [](GLuint id) -> std::string {
+            GLint length, written;
+            glGetProgramiv(id, GL_INFO_LOG_LENGTH, &length);
+            if (length <= 0)
+                return "";
+            auto stuff = new char[length + 1];
+            glGetProgramInfoLog(id, length, &written, stuff);
+            std::string result(stuff);
+            delete[] stuff;
+            return result;
+        };
+        GLint res;
+
+        GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
+        auto oglSucks = vertexSource.unwrap().c_str();
+        glShaderSource(vertex, 1, &oglSucks, nullptr);
+        glCompileShader(vertex);
+        auto vertexLog = getShaderLog(vertex);
+
+        glGetShaderiv(vertex, GL_COMPILE_STATUS, &res);
+        if(!res) {
+            glDeleteShader(vertex);
+            return Err("vertex shader compilation failed:\n{}", vertexLog);
+        }
+
+        GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
+        oglSucks = fragmentSource.unwrap().c_str();
+        glShaderSource(fragment, 1, &oglSucks, nullptr);
+        glCompileShader(fragment);
+        auto fragmentLog = getShaderLog(fragment);
+
+        glGetShaderiv(fragment, GL_COMPILE_STATUS, &res);
+        if(!res) {
+            glDeleteShader(vertex);
+            glDeleteShader(fragment);
+            return Err("fragment shader compilation failed:\n{}", fragmentLog);
+        }
+
+        program = glCreateProgram();
+        glAttachShader(program, vertex);
+        glAttachShader(program, fragment);
+        glLinkProgram(program);
+        auto programLog = getProgramLog(program);
+
+        glDeleteShader(vertex);
+        glDeleteShader(fragment);
+
+        glGetProgramiv(program, GL_LINK_STATUS, &res);
+        if(!res) {
+            glDeleteProgram(program);
+            program = 0;
+            return Err("shader link failed:\n{}", programLog);
+        }
+
+        return Ok(fmt::format(
+            "shader compilation successful. logs:\nvert:\n{}\nfrag:\n{}\nprogram:\n{}",
+            vertexLog, fragmentLog, programLog
+        ));
+    }
+
+    void cleanup() {
+        if (program)
+            glDeleteProgram(program);
+        program = 0;
+    }
+};
+
 // too lazy to figure out the cocos way so we're going full opengl mode
 // i will probably regret this later
 struct RenderTexture {
@@ -60,62 +156,10 @@ RenderTexture ppRt0;
 RenderTexture ppRt1;
 GLuint ppVao = 0;
 GLuint ppVbo = 0;
-CCGLProgram* ppShader = nullptr;
+Shader ppShader;
 GLint ppShaderFast = 0;
 GLint ppShaderFirst = 0;
 GLint ppShaderRadius = 0;
-
-class MyShaderProgram : public CCGLProgram {
-public:
-    std::string getVertShaderLog() {
-        GLint length, written;
-        glGetShaderiv(this->m_uVertShader, GL_INFO_LOG_LENGTH, &length);
-        if (length <= 0)
-            return "";
-        auto stuff = new char[length + 1];
-        glGetShaderInfoLog(this->m_uVertShader, length, &written, stuff);
-        std::string result(stuff);
-        delete[] stuff;
-        return result;
-    }
-
-    std::string getFragShaderLog() {
-        GLint length, written;
-        glGetShaderiv(this->m_uFragShader, GL_INFO_LOG_LENGTH, &length);
-        if (length <= 0)
-            return "";
-        auto stuff = new char[length + 1];
-        glGetShaderInfoLog(this->m_uFragShader, length, &written, stuff);
-        std::string result(stuff);
-        delete[] stuff;
-        return result;
-    }
-};
-#include <Geode/modify/CCGLProgram.hpp>
-class meow;
-template<>
-struct geode::modifier::ModifyDerive<meow, meow> {
-    static bool compileShader(CCGLProgram* self, GLuint* shader, GLenum type, const GLchar* source) {
-        return self->compileShader(shader, type, source);
-    }
-};
-class $modify(CCGLProgram) {
-    bool compileShader(GLuint* shader, GLenum type, const GLchar* source) {
-        if ((CCGLProgram*)this != ppShader)
-            return geode::modifier::ModifyDerive<meow, meow>::compileShader(this, shader, type, source);
-
-        if (!source)
-            return false;
-
-        *shader = glCreateShader(type);
-        glShaderSource(*shader, 1, &source, nullptr);
-        glCompileShader(*shader);
-
-        GLint status;
-        glGetShaderiv(*shader, GL_COMPILE_STATUS, &status);
-        return status == GL_TRUE;
-    }
-};
 
 void setupPostProcess() {
     auto size = CCDirector::get()->getOpenGLView()->getFrameSize();
@@ -138,60 +182,26 @@ void setupPostProcess() {
     glBindVertexArray(ppVao);
     glBindBuffer(GL_ARRAY_BUFFER, ppVbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(ppVertices), &ppVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(kCCVertexAttrib_Position);
-    glVertexAttribPointer(kCCVertexAttrib_Position, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)nullptr);
-    glEnableVertexAttribArray(kCCVertexAttrib_TexCoords);
-    glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)nullptr);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    std::string vertexShader;
-    std::string fragmentShader;
+    auto vertexPath = (std::string)CCFileUtils::get()->fullPathForFilename("pp-vert.glsl"_spr, false);
+    auto fragmentPath = (std::string)CCFileUtils::get()->fullPathForFilename("pp-frag.glsl"_spr, false);
 
-    std::ostringstream vertexSstr;
-    ghc::filesystem::ifstream vertexFile((std::string)CCFileUtils::get()->fullPathForFilename("pp-vert.glsl"_spr, false));
-    vertexSstr << vertexFile.rdbuf();
-    vertexShader = vertexSstr.str();
-    vertexFile.close();
-
-    std::ostringstream fragmentSstr;
-    ghc::filesystem::ifstream fragmentFile((std::string)CCFileUtils::get()->fullPathForFilename("pp-frag.glsl"_spr, false));
-    fragmentSstr << fragmentFile.rdbuf();
-    fragmentShader = fragmentSstr.str();
-    fragmentFile.close();
-
-    ppShader = new CCGLProgram();
-    bool initRes = ppShader->initWithVertexShaderByteArray(vertexShader.c_str(), fragmentShader.c_str());
-    auto vertLog = reinterpret_cast<MyShaderProgram*>(ppShader)->getVertShaderLog();
-    auto fragLog = reinterpret_cast<MyShaderProgram*>(ppShader)->getFragShaderLog();
-    if (!initRes) {
-        if (!vertLog.empty()) {
-            log::error("{}", vertexShader);
-            log::error("{}", vertLog);
-        }
-        if (!fragLog.empty()) {
-            log::error("{}", fragmentShader);
-            log::error("{}", fragLog);
-        }
-        CC_SAFE_DELETE(ppShader);
-        ppShader = nullptr;
+    auto res = ppShader.setup(vertexPath, fragmentPath);
+    if (!res) {
+        log::error("{}", res.unwrapErr());
         return;
     }
-    if (!vertLog.empty()) {
-        log::info("{}", vertexShader);
-        log::info("{}", vertLog);
-    }
-    if (!fragLog.empty()) {
-        log::info("{}", fragmentShader);
-        log::info("{}", fragLog);
-    }
-    ppShader->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
-    ppShader->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
-    ppShader->link();
-    glUniform1i(glGetUniformLocation(ppShader->getProgram(), "screen"), 0);
-    ppShaderFast = glGetUniformLocation(ppShader->getProgram(), "fast");
-    ppShaderFirst = glGetUniformLocation(ppShader->getProgram(), "first");
-    ppShaderRadius = glGetUniformLocation(ppShader->getProgram(), "radius");
+    log::info("{}", res.unwrap());
+    glUniform1i(glGetUniformLocation(ppShader.program, "screen"), 0);
+    ppShaderFast = glGetUniformLocation(ppShader.program, "fast");
+    ppShaderFirst = glGetUniformLocation(ppShader.program, "first");
+    ppShaderRadius = glGetUniformLocation(ppShader.program, "radius");
 }
 void cleanupPostProcess() {
     ppRt0.cleanup();
@@ -204,10 +214,7 @@ void cleanupPostProcess() {
     ppVao = 0;
     ppVbo = 0;
 
-    if (ppShader) {
-        ppShader->release();
-        ppShader = nullptr;
-    }
+    ppShader.cleanup();
     ppShaderFast = 0;
     ppShaderFirst = 0;
     ppShaderRadius = 0;
@@ -216,7 +223,7 @@ void cleanupPostProcess() {
 #include <Geode/modify/CCNode.hpp>
 class $modify(CCNode) {
     void visit() { // NOLINT(*-use-override)
-        if ((CCNode*)this != CCDirector::get()->getRunningScene() || !ppShader) {
+        if ((CCNode*)this != CCDirector::get()->getRunningScene() || ppShader.program == 0) {
             CCNode::visit();
             return;
         }
@@ -246,7 +253,7 @@ class $modify(CCNode) {
         CCNode::visit();
 
         glBindVertexArray(ppVao);
-        ppShader->use();
+        ccGLUseProgram(ppShader.program);
         glUniform1i(ppShaderFast, pp::blurFast);
         glUniform1f(ppShaderRadius, blur);
 

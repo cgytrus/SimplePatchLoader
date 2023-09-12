@@ -10,18 +10,18 @@ file(GLOB SOURCES
     src/dirs.cpp
     src/util.cpp
     src/patches.cpp
+    src/pp.cpp
 )
 
 if (WIN32)
     file(GLOB PLATFORM_SOURCES
         src/mh.cpp
-        src/pp.cpp # TODO: mac users dont have pp rn
     )
-else ()
+else()
     file(GLOB PLATFORM_SOURCES
         src/mh_stub.cpp
     )
-endif ()
+endif()
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${PLATFORM_SOURCES})
 
@@ -40,6 +40,6 @@ if (WIN32)
     target_include_directories(${PROJECT_NAME} PRIVATE mh)
     target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/mh/absolllute.megahack.lib)
     target_link_options(${PROJECT_NAME} PRIVATE /DELAYLOAD:absolllute.megahack.dll)
-endif ()
+endif()
 
 setup_geode_mod(${PROJECT_NAME})
