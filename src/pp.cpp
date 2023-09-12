@@ -198,7 +198,8 @@ void setupPostProcess() {
         return;
     }
     log::info("{}", res.unwrap());
-    glUniform1i(glGetUniformLocation(ppShader.program, "screen"), 0);
+    glProgramUniform1i(ppShader.program, glGetUniformLocation(ppShader.program, "screen"), 0);
+    glProgramUniform2f(ppShader.program, glGetUniformLocation(ppShader.program, "screenSize"), size.width, size.height);
     ppShaderFast = glGetUniformLocation(ppShader.program, "fast");
     ppShaderFirst = glGetUniformLocation(ppShader.program, "first");
     ppShaderRadius = glGetUniformLocation(ppShader.program, "radius");
