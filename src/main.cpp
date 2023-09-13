@@ -3,15 +3,9 @@
 #include <Geode/utils/web.hpp>
 #include <Geode/loader/SettingEvent.hpp>
 
-#define STB_RECT_PACK_IMPLEMENTATION
 #include <imgui-cocos.hpp>
-#include <imstb_rectpack.h>
-#include <hjfod.custom-keybinds/include/Keybinds.hpp>
 
 #include <unordered_map>
-
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui_internal.h"
 
 #include "sigscan.hpp"
 #include "dirs.hpp"
@@ -19,6 +13,11 @@
 #include "util.hpp"
 #include "pp.hpp"
 #include "patches.hpp"
+
+#define STB_RECT_PACK_IMPLEMENTATION
+#include <imstb_rectpack.h>
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui_internal.h"
 
 using namespace geode::prelude;
 
@@ -627,17 +626,28 @@ $execute {
         });
     });
 
-    using namespace keybinds;
-    BindManager::get()->registerBindable({
-        "open"_spr,
-        "Open",
-        "",
-        {Keybind::create(KEY_Tab, Modifier::None)},
-        "Global"
-    });
-    new EventListener([=](InvokeBindEvent* event) {
-        if (event->isDown())
-            isOpen = !isOpen;
-        return ListenerResult::Propagate;
-    }, InvokeBindFilter(nullptr, "open"_spr));
+    //using namespace keybinds;
+    //BindManager::get()->registerBindable({
+    //    "open"_spr,
+    //    "Open",
+    //    "",
+    //    {Keybind::create(KEY_Tab, Modifier::None)},
+    //    "Global"
+    //});
+    //new EventListener([=](InvokeBindEvent* event) {
+    //    if (event->isDown())
+    //        isOpen = !isOpen;
+    //    return ListenerResult::Propagate;
+    //}, InvokeBindFilter(nullptr, "open"_spr));
 }
+
+#include <Geode/modify/CCKeyboardDispatcher.hpp>
+class $modify(CCKeyboardDispatcher) {
+    bool dispatchKeyboardMSG(enumKeyCodes key, bool down) {
+        if (down && key == KEY_CapsLock) {
+            isOpen = !isOpen;
+            return true;
+        }
+        return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down);
+    }
+};

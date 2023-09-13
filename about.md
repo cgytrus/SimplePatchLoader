@@ -4,6 +4,8 @@ Supports MHv5, MHv6, GDHM and its own format.
 Integrates with MHv7 if installed.
 
 ## Usage
+Press **[Caps Lock]** to open the menu.
+
 Click "Open Patches Folder" and put your patch files in there:
 - root folder contains patches designed specifically for Simple Patch Loader
 - `mhv5` sub-folder contains patches designed for Mega Hack v5
@@ -29,7 +31,7 @@ and copy the .json files from `.GDHM/mod` into `gdhm` in SPL's patches folder.
       - `description` is the **patch description** shown when *hovering* in the menu (doesn't work when SPL is used with MHv7)
       - `address` is an object, containing the **actual patches**
         - The keys have the following syntax: `module signature offsets`
-          - (optional) `module` - base module name (such as `libcocos2d.dll`), the default is the base module (GD itself)
+          - (optional) `module` - base module name (such as `libcocos2d.dll`), defaults to the base module (GD itself)
           - (optional) `signature` - signature to use to scan for an address in the selected module, sets current address to the found address
           - `offsets` - offsets from the current address
             - uses [Reverse Polish Notation](https://en.wikipedia.org/wiki/Reverse_Polish_notation), so `0x3 0x1 -` results in `0x2`
